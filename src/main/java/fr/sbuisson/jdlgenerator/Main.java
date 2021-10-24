@@ -14,21 +14,19 @@ import java.nio.charset.Charset;
 
 public class Main {
 
-    static Domain domain = new Domain();
+    static Extractor extractor;
+    static Writter writter = new Writter();
 
     public static void main(String[] args) throws InvocationTargetException, IllegalAccessException, InstantiationException, IOException {
         JdlData jdlData = new JdlData();
         Arguments arguments = CommandLineParser.parse(Arguments.class, args, OptionStyle.SIMPLE);
+        HeritageType heritageType = arguments.isHeritageMotherInsideDaughter() ? HeritageType.motherInsideDaugther : HeritageType.motherLinkedToDaugher;
 
         for (String path : arguments.getDirectories()) {
-
-
-
-            HeritageType heritageType = arguments.isHeritageMotherInsideDaughter() ? HeritageType.motherInsideDaugther : HeritageType.motherLinkedToDaugher;
-            domain.extractDataFromFile(path, jdlData, heritageType);
-            FileUtils.write(new File(arguments.getFilename()), domain.toJdl(jdlData, heritageType), Charset.forName("utf-8"));
-
+            extractor = new Extractor(heritageType);
+            extractor.extractDataFromFile(path, jdlData);
         }
+        FileUtils.write(new File(arguments.getFilename()), writter.toJdl(jdlData, heritageType), Charset.forName("utf-8"));
 
 
     }

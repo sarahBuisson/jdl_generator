@@ -98,9 +98,11 @@ public class Domain {
 
                 } else if (memberDeclaration.isMethodDeclaration()) {
                     MethodDeclaration fieldDeclaration = memberDeclaration.asMethodDeclaration();
-                    String name = decaptialize(fieldDeclaration.getNameAsString().substring(3));
-                    Type type = fieldDeclaration.getType();
-                    extractMemberData(jdlData, entity, fieldDeclaration, name, type);
+                    if (fieldDeclaration.getNameAsString().startsWith("get") || fieldDeclaration.getNameAsString().startsWith("is")) {
+                        String name = decaptialize(fieldDeclaration.getNameAsString().substring(3));
+                        Type type = fieldDeclaration.getType();
+                        extractMemberData(jdlData, entity, fieldDeclaration, name, type);
+                    }
 
                 }
             });

@@ -1,4 +1,4 @@
-package sample;
+package sample.uml;
 
 import java.util.List;
 

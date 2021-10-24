@@ -1,4 +1,4 @@
-package sample;
+package sample.uml;
 
 public interface Human {
 }

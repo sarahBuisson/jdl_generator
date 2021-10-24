@@ -1,4 +1,7 @@
-package sample;
+package sample.uml;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Friend implements Human {
 

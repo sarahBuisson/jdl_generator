@@ -1,4 +1,4 @@
-package sample;
+package sample.uml;
 
 public class Daugther extends Mother implements Human{
 

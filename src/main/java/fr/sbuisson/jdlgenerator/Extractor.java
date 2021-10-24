@@ -25,7 +25,7 @@ public class Extractor {
 
     HeritageType heritageType;
     String rootPath;
-    Map<String, EntityData> alreadyProcessed=new HashMap<>();
+    Map<String, FileData> alreadyProcessed = new HashMap<>();
 
 
     public Extractor(HeritageType heritageType) {
@@ -52,7 +52,9 @@ public class Extractor {
             String code = FileUtils.readFileToString(file, Charset.forName("UTF8"));
             CompilationUnit compilationUnit = StaticJavaParser.parse(code);
             rootPath = computeRootPath(file, compilationUnit);
-            compilationUnit.getTypes().forEach(t -> jdlData.add(extractDataFromFile(t, compilationUnit)));
+            for (TypeDeclaration<?> t : compilationUnit.getTypes()) {
+                jdlData.add(extractDataFromClassFile(t, compilationUnit));
+            }
 
 
         } catch (IOException e) {
@@ -65,66 +67,71 @@ public class Extractor {
         return file.getParentFile().getPath().replace(packageToPath(compilationUnit.getPackageDeclaration().get().getNameAsString()), "");
     }
 
-    private JdlData extractDataFromFile(TypeDeclaration<?> t, CompilationUnit compilationUnit) {
-        JdlData jdlData = new JdlData();
-        if(t.isEnumDeclaration()){
+    FileData getFileDataFromImport(String className, CompilationUnit compilationUnit) throws IOException {
+        if (alreadyProcessed.containsKey(className)) {
+            return alreadyProcessed.get(className);
+        }
+        File file = getSourceFile(className, compilationUnit).get();
+        String code = FileUtils.readFileToString(file, Charset.forName("UTF8"));
+        CompilationUnit newCompilationUnit = StaticJavaParser.parse(code);
+        rootPath = computeRootPath(file, compilationUnit);
+        return extractDataFromClassFile(newCompilationUnit.getTypes().stream().filter(t -> t.getNameAsString().equals(className)).findFirst().get(), newCompilationUnit);
+    }
+
+    private FileData extractDataFromClassFile(TypeDeclaration<?> t, CompilationUnit compilationUnit) throws IOException {
+        FileData fileData = new FileData();
+        this.alreadyProcessed.put(t.getNameAsString(), fileData);
+        if (t.isEnumDeclaration()) {
             EnumDeclaration enumDeclaration = t.asEnumDeclaration();
 
-            EnumData data=new EnumData(enumDeclaration.getNameAsString());
-            jdlData.addEnum(data);
-            enumDeclaration.getEntries().forEach(e->data.addValues(e.getNameAsString()));
+            EnumData enumData = new EnumData(enumDeclaration.getNameAsString());
+            fileData.setEnumData(enumData);
+            enumDeclaration.getEntries().forEach(e -> enumData.addValues(e.getNameAsString()));
         }
         if (t instanceof ClassOrInterfaceDeclaration declaration) {
             if (t.asClassOrInterfaceDeclaration().isInterface()) {
-                return jdlData;
+                return fileData;
             }
             EntityData entity = new EntityData(t.getNameAsString());
-            this.alreadyProcessed.put(entity.getName(),entity);
-            entity.setAbstractClass(((ClassOrInterfaceDeclaration) t).isAbstract());
-            jdlData.addEntitie(entity);
-            declaration.getExtendedTypes().forEach(extended -> {
 
-                JdlData motherJdl = new JdlData();
-                Optional<File> motherFile = getSourceFile(extended.getNameAsString(), compilationUnit);
-                if (motherFile.isPresent()) {
-                    try {
-                        extractDataFromFile(motherFile.get().getPath(), motherJdl);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
+            entity.setAbstractClass(((ClassOrInterfaceDeclaration) t).isAbstract());
+            fileData.setEntityData(entity);
+            for (var extended : declaration.getExtendedTypes()) {
+
+                FileData motherFile = getFileDataFromImport(extended.getNameAsString(), compilationUnit);
+
+
+                if (motherFile != null) {
                     if (heritageType == HeritageType.motherInsideDaugther) {
-                        EntityData motherEntity = motherJdl.getEntities().get(0);
+                        EntityData motherEntity =motherFile.getEntityData();
                         entity.getMembers().putAll(motherEntity.getMembers());
                         entity.addComment(" extends " + extended.getNameAsString());
-                        jdlData.getRelationships().addAll(motherJdl.getRelationships().stream().map(r -> new RelationshipData(r.getType(), r.getLeft().replace(motherEntity.getName(), entity.getName()), r.getRight())).collect(Collectors.toList()));
-
-                    } else {
-                        jdlData.add(motherJdl);
+                        fileData.getRelationships().addAll(motherFile.getRelationships().stream().map(r -> new RelationshipData(r.getType(), r.getLeft().replace(motherEntity.getName(), entity.getName()), r.getRight())).collect(Collectors.toList()));
                     }
                 }
 
-            });
-            declaration.getMembers().stream().forEach(memberDeclaration -> {
-
+            }
+            ;
+            for (BodyDeclaration<?> memberDeclaration : declaration.getMembers()) {
                 if (memberDeclaration.isFieldDeclaration()) {
                     FieldDeclaration fieldDeclaration = memberDeclaration.asFieldDeclaration();
                     String name = fieldDeclaration.getVariables().getFirst().get().getNameAsString();
                     Type type = fieldDeclaration.getElementType();
-                    extractMemberData(jdlData, entity, fieldDeclaration, name, type, compilationUnit);
+                    extractMemberData(fileData, entity, fieldDeclaration, name, type, compilationUnit);
 
                 } else if (memberDeclaration.isMethodDeclaration()) {
                     MethodDeclaration fieldDeclaration = memberDeclaration.asMethodDeclaration();
                     if (fieldDeclaration.getNameAsString().startsWith("get") || fieldDeclaration.getNameAsString().startsWith("is")) {
                         String name = decapitalize(fieldDeclaration.getNameAsString().substring(3));
                         Type type = fieldDeclaration.getType();
-                        extractMemberData(jdlData, entity, fieldDeclaration, name, type, compilationUnit);
+                        extractMemberData(fileData, entity, fieldDeclaration, name, type, compilationUnit);
                     }
 
                 }
-            });
+            }
 
         }
-        return jdlData;
+        return fileData;
     }
 
     private Optional<File> getSourceFile(String className, CompilationUnit compilationUnit) {
@@ -147,7 +154,7 @@ public class Extractor {
     }
 
 
-    private void extractMemberData(JdlData jdlData, EntityData entity, NodeWithAccessModifiers fieldDeclaration, String name, Type type, CompilationUnit compilationUnit) {
+    private void extractMemberData(FileData jdlData, EntityData entity, NodeWithAccessModifiers fieldDeclaration, String name, Type type, CompilationUnit compilationUnit) throws IOException {
         if (!fieldDeclaration.isProtected() && !fieldDeclaration.isPrivate()) {
             if (type.isPrimitiveType() || simpleTypes.contains(type.asString())) {
                 entity.getMembers().put(name, capitalize(type.asString()));
@@ -158,37 +165,33 @@ public class Extractor {
                 Type rightType;
 
                 if (type.asString().contains("<")) {
-                    rightType= type.asClassOrInterfaceType().getTypeArguments().get().getFirst().get();
-                    relationshipType= RelationshipType.OneToMany;
-                }else{
-                    rightType=type;
-                    relationshipType= RelationshipType.OneToOne;
+                    rightType = type.asClassOrInterfaceType().getTypeArguments().get().getFirst().get();
+                    relationshipType = RelationshipType.OneToMany;
+                } else {
+                    rightType = type;
+                    relationshipType = RelationshipType.OneToOne;
                 }
 
-                    String rightName = rightType.asString();
-                    Optional<File> typeFile = getSourceFile(rightName, compilationUnit);
-                    if (typeFile.isPresent()) {
-                        var otherMemberData = new JdlData();
-                        /*try {
-                            extractDataFromFile(typeFile.get().getPath(), otherMemberData);
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        }*/
-                        if (otherMemberData.getEntities().size() == 0 || (otherMemberData.getEntities().get(0).isAbstractClass() && heritageType == HeritageType.motherInsideDaugther)) {
+                String rightName = rightType.asString();
+                Optional<File> typeFile = getSourceFile(rightName, compilationUnit);
+                if (typeFile.isPresent()) {
+                    var otherMemberData = getFileDataFromImport(rightName,compilationUnit);
 
-                            if (type.asString().contains("<")) {
-                                // entity.getMembers().put(name+"Ids", type.asString());
-                            }else {
-                              //  entity.getMembers().put(name+"Id", "String");
-                            }
-                        }else{
-                            jdlData.addRelationship(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", type.asString()));
+                    if (otherMemberData.getEntityData().isAbstractClass() && heritageType == HeritageType.motherInsideDaugther) {
+
+                        if (type.asString().contains("<")) {
+                            // entity.getMembers().put(name+"Ids", type.asString());
+                        } else {
+                            //  entity.getMembers().put(name+"Id", "String");
                         }
-                    }else{
-                        entity.getMembers().put(name, capitalize(type.asString()));
-                       // jdlData.addRelationship(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", type.asString()));
-
+                    } else {
+                        jdlData.getRelationships().add(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", type.asString()));
                     }
+                } else {
+                    entity.getMembers().put(name, capitalize(type.asString()));
+                    // jdlData.addRelationship(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", type.asString()));
+
+                }
 
             }
         }

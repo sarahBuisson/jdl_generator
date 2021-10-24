@@ -26,6 +26,14 @@ public class JdlData {
 
     public void add(JdlData extractData) {
         this.entities.addAll(extractData.entities);
+        this.enums.addAll(extractData.enums);
+        this.relationships.addAll(extractData.relationships);
+    }
+    public void add(FileData extractData) {
+        if (extractData.entityData != null)
+            this.entities.add(extractData.entityData);
+        if (extractData.enumData != null)
+            this.enums.add(extractData.getEnumData());
         this.relationships.addAll(extractData.relationships);
     }
 

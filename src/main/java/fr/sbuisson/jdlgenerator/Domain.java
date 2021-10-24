@@ -99,7 +99,7 @@ public class Domain {
                 } else if (memberDeclaration.isMethodDeclaration()) {
                     MethodDeclaration fieldDeclaration = memberDeclaration.asMethodDeclaration();
                     if (fieldDeclaration.getNameAsString().startsWith("get") || fieldDeclaration.getNameAsString().startsWith("is")) {
-                        String name = decaptialize(fieldDeclaration.getNameAsString().substring(3));
+                        String name = decapitalize(fieldDeclaration.getNameAsString().substring(3));
                         Type type = fieldDeclaration.getType();
                         extractMemberData(jdlData, entity, fieldDeclaration, name, type);
                     }
@@ -138,7 +138,7 @@ public class Domain {
     private void extractMemberData(JdlData jdlData, EntityData entity, NodeWithAccessModifiers fieldDeclaration, String name, Type type) {
         if (!fieldDeclaration.isProtected() && !fieldDeclaration.isPrivate()) {
             if (type.isPrimitiveType() || simpleTypes.contains(type.asString())) {
-                entity.getMembers().put(name, type.asString());
+                entity.getMembers().put(name, capitalize(type.asString()));
             } else if (type.asString().contains("<")) {
                 jdlData.addRelationship(new RelationshipData(RelationshipType.OneToMany, entity.getName() + "{" + name + "}", type.asClassOrInterfaceType().getTypeArguments().get().getFirst().get().asString()));
             } else {
@@ -148,10 +148,14 @@ public class Domain {
         }
     }
 
-    public String decaptialize(String asString) {
+    public String decapitalize(String asString) {
         return "" + Character.toLowerCase(asString.charAt(0)) + asString.substring(1);
 
 
+    }
+
+    public String capitalize(String asString) {
+        return "" + Character.toUpperCase(asString.charAt(0)) + asString.substring(1);
     }
 
 

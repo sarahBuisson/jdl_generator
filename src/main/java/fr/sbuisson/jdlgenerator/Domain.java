@@ -116,8 +116,10 @@ public class Domain {
                             String path = packageToPath(directImport.getNameAsString());
                             return new File(path + ".java");
                         }
-                ).or(() -> compilationUnit.getImports().stream().filter(imp -> imp.isAsterisk() && !imp.isStatic()).flatMap(imp ->
-                                Arrays.stream(FileUtils.getFile(rootPath, packageToPath(imp.getNameAsString())).listFiles()))
+                ).or(() -> compilationUnit.getImports().stream().filter(imp -> imp.isAsterisk() && !imp.isStatic())
+                        .map(imp->FileUtils.getFile(rootPath, packageToPath(imp.getNameAsString()))).filter(f->f.exists())
+                        .flatMap(imp ->
+                                Arrays.stream(imp.listFiles()))
                         .filter(f -> f.getName().equals(extended.getNameAsString())).findFirst()
 
 

@@ -46,7 +46,7 @@ public class Extractor {
 
     }
 
-    private JdlData extractDataFromFile(File file) {
+    public JdlData extractDataFromFile(File file) {
         JdlData jdlData = new JdlData();
         try {
             String code = FileUtils.readFileToString(file, Charset.forName("UTF8"));
@@ -63,11 +63,11 @@ public class Extractor {
         return jdlData;
     }
 
-    private String computeRootPath(File file, CompilationUnit compilationUnit) {
+    public String computeRootPath(File file, CompilationUnit compilationUnit) {
         return file.getParentFile().getPath().replace(packageToPath(compilationUnit.getPackageDeclaration().get().getNameAsString()), "");
     }
 
-    FileData getFileDataFromImport(String className, CompilationUnit compilationUnit) throws IOException {
+    public FileData getFileDataFromImport(String className, CompilationUnit compilationUnit) throws IOException {
         if (alreadyProcessed.containsKey(className)) {
             return alreadyProcessed.get(className);
         }
@@ -78,7 +78,7 @@ public class Extractor {
         return extractDataFromClassFile(newCompilationUnit.getTypes().stream().filter(t -> t.getNameAsString().equals(className)).findFirst().get(), newCompilationUnit);
     }
 
-    private FileData extractDataFromClassFile(TypeDeclaration<?> t, CompilationUnit compilationUnit) throws IOException {
+    public FileData extractDataFromClassFile(TypeDeclaration<?> t, CompilationUnit compilationUnit) throws IOException {
         FileData fileData = new FileData();
         this.alreadyProcessed.put(t.getNameAsString(), fileData);
         if (t.isEnumDeclaration()) {
@@ -111,7 +111,6 @@ public class Extractor {
                 }
 
             }
-            ;
             for (BodyDeclaration<?> memberDeclaration : declaration.getMembers()) {
                 if (memberDeclaration.isFieldDeclaration()) {
                     FieldDeclaration fieldDeclaration = memberDeclaration.asFieldDeclaration();
@@ -182,10 +181,13 @@ public class Extractor {
                         if (type.asString().contains("<")) {
                             // entity.getMembers().put(name+"Ids", type.asString());
                         } else {
+
                             //  entity.getMembers().put(name+"Id", "String");
                         }
+                        jdlData.getRelationships().add(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", rightName));
+
                     } else {
-                        jdlData.getRelationships().add(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", type.asString()));
+                        jdlData.getRelationships().add(new RelationshipData(relationshipType, entity.getName() + "{" + name + "}", rightName));
                     }
                 } else {
                     entity.getMembers().put(name, capitalize(type.asString()));

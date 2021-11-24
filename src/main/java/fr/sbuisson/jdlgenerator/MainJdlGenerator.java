@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
 
-public class Main {
+public class MainJdlGenerator {
 
     static Extractor extractor;
     static Writter writter = new Writter();

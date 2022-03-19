@@ -32,11 +32,11 @@ public class MainDTOSpliter {
 
     public static void run(Arguments arguments) throws IOException {
 
-        explore(new File(arguments.getDirectoryInput()), arguments);
+        explore(new File(arguments.getDirectoryInput().get(0)), arguments);
     }
 
     public static void explore(File file, Arguments arguments) throws IOException {
-        var newFilePath = file.getPath().replace(arguments.getDirectoryInput(), arguments.getDirectoryOutput());
+        var newFilePath = file.getPath().replace(arguments.getDirectoryInput().get(0), arguments.getDirectoryOutput().get(0));
 
         if (file.isDirectory()) {
             System.out.println(file);
@@ -51,11 +51,12 @@ public class MainDTOSpliter {
 
 
             if (file.getName().contains("DTO")) {
-                String code = FileUtils.readFileToString(newFile, Charset.forName("UTF8"));
+                String code = FileUtils.readFileToString(file, Charset.forName("UTF8"));
                 File ResponseDTOFile = new File(newFile.getPath().replaceAll("DTO", "ResponseDTO"));
+                ResponseDTOFile.createNewFile();
                 FileUtils.write(ResponseDTOFile, code.replaceAll("DTO", "ResponseDTO"));
                 File requestDTOFile = new File(newFile.getPath().replaceAll("DTO", "RequestDTO"));
-
+                requestDTOFile.createNewFile();
 
                 String codeRequest = FileUtils.readFileToString(requestDTOFile, Charset.forName("UTF8"));
                 CompilationUnit compilationUnit = StaticJavaParser.parse(code);

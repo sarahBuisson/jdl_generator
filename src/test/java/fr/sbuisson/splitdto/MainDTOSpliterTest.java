@@ -5,18 +5,20 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
+import static java.util.Arrays.asList;
+
 public class MainDTOSpliterTest {
 
     @Test
     public void testMain() throws Exception {
-        MainDTOSpliter.main(new String[]{"args"});
+        MainDTOSpliter.main(new String[]{"-inputdirectory",".\\src\\test\\java", "-outputDirectory",".\\outputSplit"});
     }
 
     @Test
     public void testRun() throws Exception {
         Arguments arguments = new Arguments();
-        arguments.setDirectoryInput(".\\src\\test\\java");
-        arguments.setDirectoryOutput(".\\outputSplit");
+        arguments.setDirectoryInput(asList(".\\src\\test\\java\\sample\\rest"));
+        arguments.setDirectoryOutput(asList(".\\outputSplit"));
         MainDTOSpliter.run(arguments);
     }
 

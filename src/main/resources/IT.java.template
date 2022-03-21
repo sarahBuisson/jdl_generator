@@ -40,7 +40,7 @@ public class {{className}}IT {
 
 
     private final MockMvc mvc;
-    private final MockRestServiceServer mockServer;
+    private MockRestServiceServer mockServer;
 
     @BeforeEach
     public void beforeEach(){
@@ -61,13 +61,17 @@ public class {{className}}IT {
     @MockBean
     private {{className}} {{mockName}};
 {{/mocks}}
+/*
 @Autowired
 RestTemplate restTemplate;
+*/
+public ObjectMapper objectMapper = new ObjectMapper();
+
 
     @Autowired
     public {{className}}IT(MockMvc mvc) {
         this.mvc = mvc;
-        this.mockServer = MockRestServiceServer.createServer(restTemplate);
+     //   this.mockServer = MockRestServiceServer.createServer(restTemplate);
     }
 
 {{#tests}}
@@ -82,26 +86,29 @@ RestTemplate restTemplate;
 
                 */
 
-           {{#requestBody}}
-           var request = new {{requestBodyClassName}}()
-           {{requestBodyInit}}
-           {{/requestBody}}
+           {{#requestInit}}
+//initRequest
+           {{{requestInit}}}
+           {{/requestInit}}
 
         // WHEN
         var result = mvc.perform(
                 MockMvcRequestBuilders
                         .{{actionHttp}}("{{classUrl}}{{url}}")
-{{#requestBody}}
-.content(request)
-{{/requestBody}}{{#params}}
+{{#requestInit}}
+.content(objectMapper.writeValueAsString(request))
+{{/requestInit}}{{#params}}
                         .param({{key}}, "{{value}}")
                         {{/params}} );
 
         // THEN
         result.andExpect(status().isOk());
               //  .andExpect(jsonPath("$[0].label", equalTo("Virement Internet")));
-              var actual = new ObjectMapper().readValue( result.andReturn().getResponse().getContentAsString(), {{responseClassName}}.class))
+              var actual = objectMapper.readValue( result.andReturn().getResponse().getContentAsString(), {{responseBodyClassName}}.class);
         {{assertReponse}}
     }
+    {{#extraMethods}}
+    {{{.}}}
+    {{/extraMethods}}
  {{/tests}}
 }

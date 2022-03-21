@@ -1,9 +1,6 @@
 package sample.rest;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import sample.rest.SomeClassDTO;
 
 @RestController("some")
@@ -16,12 +13,12 @@ public class SomeController {
     }
 
     @PostMapping("set")
-    public SomeClassDTO setSome(SomeClassDTO request) {
+    public SomeClassDTO setSome(@RequestBody SomeClassDTO request) {
         return new SomeClassDTO();
     }
 
 
-    public SomeClassDTO doSome(SomeClassDTO request) {
+    public SomeClassDTO doSome(@RequestBody SomeClassDTO request) {
         return null;
     }
 }

@@ -11,8 +11,9 @@ class MainTestGeneratorTest {
     @Test
     public void testRun() throws Exception {
         var arguments = new Arguments();
-        arguments.setDirectoryInput(asList(".\\src\\test\\java\\sample\\rest\\controller"));
-        arguments.setDirectoryOutput(asList(".\\outputGenerator"));
+        arguments.setInputDirectory(asList(".\\src\\test\\java\\sample\\rest\\controller"));
+        arguments.setOutputDirectory(asList(".\\outputGenerator"));
+        arguments.setSrcDirectory(asList(".\\src\\test\\java"));
         MainITGenerator.run(arguments);
     }
 }

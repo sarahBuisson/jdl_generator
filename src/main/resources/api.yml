@@ -1,0 +1,39 @@
+openapi: "3.0.0"
+info:
+  title: e
+  version: 0.0.0
+  description: dede
+paths:
+  /some:
+    post:
+      summary: set someValue
+      requestBody:
+        content:
+          application/json:
+            schema:      # Request body contents
+              type: object
+              properties:
+                param1:
+                  type: string
+
+              example:   # Sample object
+                param1: 10
+      responses:
+        '200':
+          description: OK
+    get:
+      summary: get some Value
+      requestBody:
+        content:
+          application/json:
+            schema:      # Request body contents
+              type: object
+              properties:
+                param1:
+                  type: string
+
+              example:   # Sample object
+                param1: 10
+      responses:
+        '200':
+          description: OK

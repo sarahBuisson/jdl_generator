@@ -1,0 +1,107 @@
+package {{packageName}};
+
+import {{packageName}}.{{className}};
+{{#imports}}
+import {{.}};
+{{/imports}}
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
+
+import static java.lang.Boolean.TRUE;
+import static java.util.Objects.requireNonNull;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@WebMvcTest({{className}}.class)
+public class {{className}}IT {
+
+
+    private final MockMvc mvc;
+    private final MockRestServiceServer mockServer;
+
+    @BeforeEach
+    public void beforeEach(){
+
+    // TODO delete only when not used anymore
+
+        mockServer.expect(requestTo("*"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
+                .andRespond((data) -> {
+                              System.out.println("callToMock for url and request " + data.getMethod() + " " + data.getURI() + data.getBody());
+                              return null;
+                          });
+    }
+
+
+{{#mocks}}
+    @MockBean
+    private {{className}} {{mockName}};
+{{/mocks}}
+@Autowired
+RestTemplate restTemplate;
+
+    @Autowired
+    public {{className}}IT(MockMvc mvc) {
+        this.mvc = mvc;
+        this.mockServer = MockRestServiceServer.createServer(restTemplate);
+    }
+
+{{#tests}}
+    @Test
+    void {{testName}}() throws Exception {
+        // GIVEN
+      /*
+        mockServer.expect(requestTo(accountTransactionsApiURL))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
+                .andRespond(withSuccess(fakeBodyResponse, MediaType.APPLICATION_JSON));
+
+                */
+
+           {{#requestBody}}
+           var request = new {{requestBodyClassName}}()
+           {{requestBodyInit}}
+           {{/requestBody}}
+
+        // WHEN
+        var result = mvc.perform(
+                MockMvcRequestBuilders
+                        .{{actionHttp}}("{{classUrl}}{{url}}")
+{{#requestBody}}
+.content(request)
+{{/requestBody}}{{#params}}
+                        .param({{key}}, "{{value}}")
+                        {{/params}} );
+
+        // THEN
+        result.andExpect(status().isOk());
+              //  .andExpect(jsonPath("$[0].label", equalTo("Virement Internet")));
+              var actual = new ObjectMapper().readValue( result.andReturn().getResponse().getContentAsString(), {{responseClassName}}.class))
+        {{assertReponse}}
+    }
+ {{/tests}}
+}

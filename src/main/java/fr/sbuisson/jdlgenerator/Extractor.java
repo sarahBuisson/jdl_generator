@@ -88,7 +88,9 @@ public class Extractor {
             fileData.setEnumData(enumData);
             enumDeclaration.getEntries().forEach(e -> enumData.addValues(e.getNameAsString()));
         }
-        if (t instanceof ClassOrInterfaceDeclaration declaration) {
+        if (t instanceof ClassOrInterfaceDeclaration) {
+            ClassOrInterfaceDeclaration declaration = (ClassOrInterfaceDeclaration) t;
+
             if (t.asClassOrInterfaceDeclaration().isInterface()) {
                 return fileData;
             }

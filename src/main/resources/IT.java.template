@@ -5,6 +5,8 @@ import {{packageName}}.{{className}};
 import {{.}};
 {{/imports}}
 
+
+import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -40,20 +44,19 @@ public class {{className}}IT {
 
 
     private final MockMvc mvc;
-    private MockRestServiceServer mockServer;
+
+    WireMockServer wireMockServer = new WireMockServer(3666); //No-args constructor will start on port 8080, no HTTPS
+
 
     @BeforeEach
     public void beforeEach(){
-
+    wireMockServer.start();
+    wireMockServer.resetAll();
     // TODO delete only when not used anymore
 
-        mockServer.expect(requestTo("*"))
-                .andExpect(method(HttpMethod.GET))
-                .andExpect(header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE))
-                .andRespond((data) -> {
-                              System.out.println("callToMock for url and request " + data.getMethod() + " " + data.getURI() + data.getBody());
-                              return null;
-                          });
+
+        wireMockServer.stubFor(any(anyUrl()).willReturn(aResponse().withBody("TODO")));
+
     }
 
 
@@ -107,8 +110,9 @@ public ObjectMapper objectMapper = new ObjectMapper();
               var actual = objectMapper.readValue( result.andReturn().getResponse().getContentAsString(), {{responseBodyClassName}}.class);
         {{assertReponse}}
     }
-    {{#extraMethods}}
-    {{{.}}}
-    {{/extraMethods}}
+
  {{/tests}}
+     {{#extraMethodes}}
+     {{{.}}}
+     {{/extraMethodes}}
 }

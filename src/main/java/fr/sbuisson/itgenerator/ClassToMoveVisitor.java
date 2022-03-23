@@ -63,7 +63,7 @@ public class ClassToMoveVisitor extends ModifierVisitor<Map<String, String>> {
 
     public CompilationUnit getCompilationUnitOf(String className) {
         var classImport = imports.stream()
-                .filter(str -> str.replaceAll(";", "").endsWith(className))
+                .filter(str -> str.replaceAll(";", "").endsWith("." +className))
                 .findFirst()
                 .orElse(this.packageName + "." + className);
 

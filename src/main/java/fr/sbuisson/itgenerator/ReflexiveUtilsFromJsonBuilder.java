@@ -5,29 +5,25 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
 import fr.sbuisson.jdlgenerator.Utils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.github.javaparser.utils.Utils.capitalize;
 
-public class ReflexiveUtilsBuilder {
+public class ReflexiveUtilsFromJsonBuilder {
 
     public String mainScript = "";
     public Map<String, String> otherMethodes = new HashMap<>();
     public int minLength = 5;
 
-    public ReflexiveUtilsBuilder(String json, String nodeName) {
+    public ReflexiveUtilsFromJsonBuilder(String json, String nodeName) {
 
         this(json, nodeName, 5);
 
     }
 
-    public ReflexiveUtilsBuilder(String json, String nodeName, int minLength) {
+    public ReflexiveUtilsFromJsonBuilder(String json, String nodeName, int minLength) {
         this.minLength = minLength;
         try {
             var node = new ObjectMapper().readTree(json);

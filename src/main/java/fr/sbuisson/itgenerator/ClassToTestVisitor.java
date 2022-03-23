@@ -53,8 +53,8 @@ public class ClassToTestVisitor extends ClassToBuildVisitor {
                 classToBuildVisitor.srcPath = srcPath;
                 classToBuildVisitor.visit(this.getCompilationUnitOf(data.requestBodyClassName), new HashMap<>());
                 init += classToBuildVisitor.buildScript;
-                data.requestInit = "var request = buildDefault" + data.requestBodyClassName + "();\n";
-                data.extraMethods.add("public "+data.requestBodyClassName+" buildDefault" + data.requestBodyClassName + "(){\n" + init + "return request;\n}\n");
+                data.requestInit = "var request = build" + data.requestBodyClassName + "();\n";
+                extraMethodes.put("build" + data.requestBodyClassName, "public " + data.requestBodyClassName + " build" + data.requestBodyClassName + "(){\n" + init + "return request;\n}\n");
 
             }
             data.testName = "should_" + method.getNameAsString();

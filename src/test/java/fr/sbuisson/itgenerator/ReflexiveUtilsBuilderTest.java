@@ -1,22 +1,14 @@
 package fr.sbuisson.itgenerator;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import java.util.Map;
-
-import static org.mockito.Mockito.*;
 
 class ReflexiveUtilsBuilderTest {
 
     @Test
     public void testSimpleJson() {
 
-        var actual = new ReflexiveUtilsBuilder("{\"a\":\"b\",\"c\":\"d\"}", "request");
+        var actual = new ReflexiveUtilsFromJsonBuilder("{\"a\":\"b\",\"c\":\"d\"}", "request");
         Assertions.assertEquals(1, actual.otherMethodes.size());
         Assertions.assertEquals("var request = buildRequest();\n", actual.mainScript);
         Assertions.assertEquals("var request = new Request();\n" +
@@ -28,7 +20,7 @@ class ReflexiveUtilsBuilderTest {
    @Test
     public void testComplexeJson() {
 
-        var actual = new ReflexiveUtilsBuilder("{\"a\":\"b\",\"c\":{\"d\":4}, \"e\":[4,5], \"f\":[{\"g\":\"h\"}]}", "request");
+        var actual = new ReflexiveUtilsFromJsonBuilder("{\"a\":\"b\",\"c\":{\"d\":4}, \"e\":[4,5], \"f\":[{\"g\":\"h\"}]}", "request");
         Assertions.assertEquals(3, actual.otherMethodes.size());
         Assertions.assertEquals("var request = buildRequest();\n", actual.mainScript);
         Assertions.assertEquals("var request = new Request();\n" +
@@ -50,7 +42,7 @@ class ReflexiveUtilsBuilderTest {
     @Test
     public void testSimple2Json() {
 
-        var actual = new ReflexiveUtilsBuilder("{\"a\":{\"b\":2}}", "request", 1);
+        var actual = new ReflexiveUtilsFromJsonBuilder("{\"a\":{\"b\":2}}", "request", 1);
         Assertions.assertEquals(2, actual.otherMethodes.size());
 
         Assertions.assertEquals("var request = buildRequest();\n", actual.mainScript);
@@ -68,7 +60,7 @@ class ReflexiveUtilsBuilderTest {
     @Test
     public void testSimpleArrayJson() {
 
-        var actual = new ReflexiveUtilsBuilder("{\"a\":[{\"b\":2},{\"b\":3}]}", "request", 1);
+        var actual = new ReflexiveUtilsFromJsonBuilder("{\"a\":[{\"b\":2},{\"b\":3}]}", "request", 1);
 
 
         Assertions.assertEquals("var request = buildRequest();\n", actual.mainScript);

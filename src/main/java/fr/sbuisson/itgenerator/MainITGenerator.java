@@ -62,6 +62,7 @@ public class MainITGenerator {
                 scopes.put("classUrl", classDataForTest.classUrl);
                 scopes.put("tests", classDataForTest.tests);
                 scopes.put("imports", classDataForTest.imports);
+                scopes.put("extraMethodes", classDataForTest.extraMethodes.values());
                 scopes.put("", classDataForTest.packageName);
 
                 StringWriter writer = new StringWriter();

@@ -3,17 +3,17 @@ package sample.rest;
 import java.util.List;
 
 public class SomeClassDTO {
-    String id;
+    int id;
     String a;
     String b;
     OtherClassDTO otherClass;
     List<OtherClassDTO> otherClasses;
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
     }
 

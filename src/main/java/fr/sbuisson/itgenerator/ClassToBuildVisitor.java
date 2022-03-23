@@ -1,16 +1,9 @@
 package fr.sbuisson.itgenerator;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.PackageDeclaration;
-import com.github.javaparser.ast.body.AnnotationDeclaration;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.visitor.ModifierVisitor;
 import com.github.javaparser.ast.visitor.Visitable;
-import fr.sbuisson.itgenerator.model.MethodData;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -20,65 +13,66 @@ public class ClassToBuildVisitor extends ClassToMoveVisitor {
 
     public String currentInstanceName;
     public String buildScript = "";
-
+    public int minLenghForMethod = 1;
+    public Map<String, String> extraMethodes = new HashMap<>();
 
     @Override
     public Visitable visit(final MethodDeclaration method, final Map<String, String> arg) {
         super.visit(method, arg);
 
-        if (method.getNameAsString().startsWith("set")) {
+        String methodeName = method.getNameAsString();
+        if (methodeName.startsWith("set")) {
             String setterClass = method.getParameters().get(0).getTypeAsString();
+
+            String fieldName = method.getParameters().get(0).getNameAsString();
             if (setterClass.equals("void")) {
 
             } else if (setterClass.equals("String")) {
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(\"" + method.getNameAsString() + "\");\n";
+                buildScript += currentInstanceName + "." + methodeName + "(\"TODO\"); // TODO\n";
             } else if (asList("int", "Integer", "Long", "long").contains(setterClass)) {
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(" + (int) (Math.random() * 10) + ");\n";
+                buildScript += currentInstanceName + "." + methodeName + "(" + (int) (Math.random() * 10) + "); // TODO\n";
             } else if (asList("float", "Float", "Double", "doube").contains(setterClass)) {
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(" + ((int) (Math.random() * 1000)) / 100 + ");\n";
-            } else if (setterClass.startsWith("List")) {
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(new ArrayList<>());\n";
-                imports.add("java.util.ArrayList");
+                buildScript += currentInstanceName + "." + methodeName + "(" + ((int) (Math.random() * 1000)) / 100 + "); // TODO\n";
+            } else if (setterClass.contains("List<") || setterClass.contains("Set<")) {
                 var templateClass = setterClass.split("<", -1)[1].replace(">", "");
-                buildScript += "var " + templateClass.toLowerCase() + 0 + " = new " + templateClass + "();\n";
+
+                if (setterClass.contains("List<")) {
+                    buildScript += "var " + fieldName + " = new ArrayList<" + templateClass + ">();\n";
+                    imports.add("java.util.ArrayList");
+                }
+                if (setterClass.contains("Set<")) {
+                    buildScript += "var " + fieldName + " = new HashSet<" + templateClass + ">();\n";
+                    imports.add("java.util.HashSet");
+                }
+                buildScript += currentInstanceName + "." + methodeName + "(" + fieldName + ");// init list\n";
+
                 ClassToBuildVisitor classToBuildVisitor = new ClassToBuildVisitor();
                 classToBuildVisitor.srcPath = srcPath;
-                classToBuildVisitor.currentInstanceName = templateClass.toLowerCase() + 0;
+                classToBuildVisitor.currentInstanceName = fieldName + 0;
                 CompilationUnit compilationUnitOf = this.getCompilationUnitOf(templateClass);
                 classToBuildVisitor.visit(compilationUnitOf, new HashMap<>());
-                buildScript += classToBuildVisitor.buildScript;
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(" + templateClass.toLowerCase() + 0 + ");";
+
+                decideIfScriptAddedOtPutInMethode(methodeName, templateClass, fieldName + 0, classToBuildVisitor, fieldName);
+
+                buildScript += fieldName + ".add(" + fieldName + 0 + ");\n";
 
                 imports.addAll(classToBuildVisitor.imports);
-            } else if (setterClass.startsWith("Map")) {
+            } else if (setterClass.contains("Map")) {
                 imports.add("java.util.HashMap");
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(new HashMap<>());\n";
-            } else if (setterClass.startsWith("Set")) {
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(new HashSet<>());\n";
-                imports.add("java.util.HashSet");
-
-                var templateClass = setterClass.split("<", -1)[1].replace(">", "");
-                buildScript += "var " + templateClass.toLowerCase() + 0 + " = new " + templateClass + "();\n";
-                ClassToBuildVisitor classToBuildVisitor = new ClassToBuildVisitor();
-                classToBuildVisitor.currentInstanceName = templateClass.toLowerCase() + 0;
-                classToBuildVisitor.srcPath = srcPath;
-                classToBuildVisitor.visit(this.getCompilationUnitOf(templateClass), new HashMap<>());
-                buildScript += classToBuildVisitor.buildScript;
-                buildScript += currentInstanceName + "." + method.getNameAsString() + "(" + templateClass.toLowerCase() + 0 + ");\n";
-                imports.addAll(classToBuildVisitor.imports);
+                buildScript += currentInstanceName + "." + methodeName + "(new HashMap<>());\n";
             } else {
                 ClassToBuildVisitor classToBuildVisitor = new ClassToBuildVisitor();
                 classToBuildVisitor.srcPath = srcPath;
-                classToBuildVisitor.currentInstanceName = setterClass.toLowerCase();
+                classToBuildVisitor.currentInstanceName = fieldName;
                 CompilationUnit compilationUnitOf = this.getCompilationUnitOf(setterClass);
                 if (compilationUnitOf != null) {
                     classToBuildVisitor.visit(compilationUnitOf, new HashMap<>());
-                    buildScript += "var " + setterClass.toLowerCase() + " = new " + setterClass + "();\n";
-                    buildScript += currentInstanceName + "." + method.getNameAsString() + "(" + setterClass.toLowerCase() + ");\n";
 
-                    buildScript += classToBuildVisitor.buildScript;
                     imports.addAll(classToBuildVisitor.imports);
                     imports.add(classToBuildVisitor.packageName + "." + setterClass);
+                    extraMethodes.putAll(classToBuildVisitor.extraMethodes);
+                    decideIfScriptAddedOtPutInMethode(methodeName, setterClass, fieldName, classToBuildVisitor, currentInstanceName);
+
                 } else {
                     System.out.println("not found : " + setterClass);
                 }
@@ -86,6 +80,24 @@ public class ClassToBuildVisitor extends ClassToMoveVisitor {
             }
         }
         return method;
+    }
+
+    private void decideIfScriptAddedOtPutInMethode(String methodeName, String setterClass, String fieldName, ClassToBuildVisitor classToBuildVisitor, String instanceToSet) {
+        if (minLenghForMethod > StringUtils.countMatches(classToBuildVisitor.buildScript, ".set")) {
+            buildScript += "var " + instanceToSet + " = new " + setterClass + "();\n";
+            //buildScript += instanceToSet + "." + methodeName + "(" + fieldName + ");\n";
+            buildScript += classToBuildVisitor.buildScript;
+
+
+        } else {
+
+            buildScript += "var " + fieldName + " = build" + setterClass + "();\n";
+            //buildScript += instanceToSet + "." + methodeName + "(" + fieldName + ");\n";
+            this.extraMethodes.put("build" + setterClass, "public " + setterClass + " build" + setterClass + "(){ //B\n"
+                    + "var " + fieldName + " = new " + setterClass + "();\n"
+                    + classToBuildVisitor.buildScript + "return " + fieldName + ";\n}");
+
+        }
     }
 
 

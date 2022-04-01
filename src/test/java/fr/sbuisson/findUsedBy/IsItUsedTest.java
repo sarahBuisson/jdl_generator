@@ -21,7 +21,14 @@ import java.util.stream.Collectors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static java.util.Arrays.asList;
 
+//TODO : heritage et lambda
 public class IsItUsedTest {
+
+    @Test
+    public void TODO() throws Exception {
+        //TODO : heritage et lambda
+        throw new Exception("//TODO : heritage et lambda");
+    }
     @Test
     public void sample() {
         List<JavaClasses> importedClassesPack = asList(new ClassFileImporter().importPackages("fr.sbuisson.sample"));
@@ -32,6 +39,8 @@ public class IsItUsedTest {
         // THEN
         importedClassesPack.forEach(importedClasses -> rule.evaluate(importedClasses));
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.dateNaissance", "fr.sbuisson.sample.building"));
+        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.poid", "fr.sbuisson.sample.building"));
+        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.couleur", "fr.sbuisson.sample.building"));
     }
 
 
@@ -39,7 +48,7 @@ public class IsItUsedTest {
     public void SearchFromCsv() throws IOException {
 
         List<String> methodeToSearch = new ArrayList<String>();
-        try (CSVReader csvReader = new CSVReader(new FileReader(FileUtils.toFile(getClass().getClassLoader().getResource("toKeep.csv")))) ){
+        try (CSVReader csvReader = new CSVReader(new FileReader(FileUtils.toFile(getClass().getClassLoader().getResource("toKeep.csv"))))) {
             String[] values = null;
             while ((values = csvReader.readNext()) != null) {
                 methodeToSearch.add(values[0]);
@@ -57,8 +66,9 @@ public class IsItUsedTest {
 
         System.out.println(methodeToSearch);
         System.out.println(methodeToSearch.size());
-        for(var methode : methodeToSearch)
-        System.out.println(haveBeenCalledBy(scrapper.calledBy, methode, "fr.sbuisson.sample.building"));
+        for (var methode : methodeToSearch) {
+            System.out.println(haveBeenCalledBy(scrapper.calledBy, methode, "fr.sbuisson.sample.building"));
+        }
     }
 
     class Scrapper extends DescribedPredicate<JavaAccess<?>> {
@@ -76,8 +86,22 @@ public class IsItUsedTest {
         @Override
         public boolean apply(JavaAccess<?> access) {
 
-                calledBy.putValues(access.getTarget().getFullName(), access.getOrigin().getFullName());
-            accessingTo.putValues(access.getOrigin().getFullName(), access.getTarget().getFullName());
+            String targetName = access.getTarget().getFullName();
+            String originName = access.getOrigin().getFullName();
+            if (targetName.contains("lambda$"))
+                targetName = targetName.substring(0, targetName.indexOf("lambda$"));
+            if (originName.contains("lambda$"))
+                originName = originName.substring(0, originName.indexOf("lambda$"));
+
+            if (targetName.contains("<init>"))
+                targetName = targetName.substring(0, targetName.indexOf("<init>"));
+            if (originName.contains("<init>"))
+                originName = originName.substring(0, originName.indexOf("<init>"));
+            System.out.println("---");
+            System.out.println(access.getTarget().getFullName() + " " + access.getOrigin().getFullName());
+            System.out.println(targetName + " " + originName);
+            calledBy.putValues(targetName, originName);
+            accessingTo.putValues(originName, targetName);
             return false;
         }
 
@@ -88,8 +112,8 @@ public class IsItUsedTest {
     public List<String> haveBeenCalledBy(MultiMap<String> allCalledBy, String called, String packageCalling) {
         Set<String> callings = new HashSet<>();
         List<String> c1 = allCalledBy.get(called);
-        if(c1!=null)
-        callings.addAll(c1);
+        if (c1 != null)
+            callings.addAll(c1);
         var n = 0;
         while (n < callings.size()) {
 

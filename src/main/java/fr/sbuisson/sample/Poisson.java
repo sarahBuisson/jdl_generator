@@ -1,10 +1,14 @@
 package fr.sbuisson.sample;
 
+import lombok.Getter;
+
 import java.util.Date;
 
+@Getter
 public class Poisson {
     public Date dateNaissance;
     public String couleur;
+    public String poid;
 
     public Date getDateNaissance() {
         return dateNaissance;

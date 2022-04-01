@@ -4,6 +4,7 @@ import com.github.jknack.handlebars.internal.antlr.misc.Predicate;
 import com.opencsv.CSVReader;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaAccess;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
@@ -29,17 +30,34 @@ public class IsItUsedTest {
         //TODO : heritage et lambda
         throw new Exception("//TODO : heritage et lambda");
     }
+
     @Test
     public void sample() {
         List<JavaClasses> importedClassesPack = asList(new ClassFileImporter().importPackages("fr.sbuisson.sample"));
 
         var scrapper = new Scrapper();
+
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
         ArchRule rule =
                 noClasses().should().accessTargetWhere(scrapper);
+
+
         // THEN
         importedClassesPack.forEach(importedClasses -> rule.evaluate(importedClasses));
+
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleHeritance =
+                noClasses().should().beAssignableFrom(new ScrapperInherit(scrapper.calledBy));
+
+        importedClassesPack.forEach(importedClasses -> ruleHeritance.evaluate(importedClasses));
+
+        System.out.println("dateNaissance");
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.dateNaissance", "fr.sbuisson.sample.building"));
+        System.out.println("poid");
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.poid", "fr.sbuisson.sample.building"));
+        System.out.println("couleur");
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.couleur", "fr.sbuisson.sample.building"));
     }
 
@@ -62,7 +80,14 @@ public class IsItUsedTest {
         ArchRule rule =
                 noClasses().should().accessTargetWhere(scrapper);
         // THEN
+        // la rule sert juste de pretexte pour le traitement du scrapper
         importedClassesPack.forEach(importedClasses -> rule.evaluate(importedClasses));
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleHeritance =
+                noClasses().should().beAssignableFrom(new ScrapperInherit(scrapper.calledBy));
+
+        importedClassesPack.forEach(importedClasses -> ruleHeritance.evaluate(importedClasses));
 
         System.out.println(methodeToSearch);
         System.out.println(methodeToSearch.size());
@@ -86,6 +111,7 @@ public class IsItUsedTest {
         @Override
         public boolean apply(JavaAccess<?> access) {
 
+
             String targetName = access.getTarget().getFullName();
             String originName = access.getOrigin().getFullName();
             if (targetName.contains("lambda$"))
@@ -97,11 +123,15 @@ public class IsItUsedTest {
                 targetName = targetName.substring(0, targetName.indexOf("<init>"));
             if (originName.contains("<init>"))
                 originName = originName.substring(0, originName.indexOf("<init>"));
+
+            if(targetName.contains("java.lang.Object")){
+                return false;
+            }
             System.out.println("---");
             System.out.println(access.getTarget().getFullName() + " " + access.getOrigin().getFullName());
             System.out.println(targetName + " " + originName);
-            calledBy.putValues(targetName, originName);
-            accessingTo.putValues(originName, targetName);
+            calledBy.add(targetName, originName);
+            accessingTo.add(originName, targetName);
             return false;
         }
 
@@ -118,7 +148,7 @@ public class IsItUsedTest {
         while (n < callings.size()) {
 
             n = callings.size();
-            callings.forEach(calling -> {
+            new ArrayList<>(callings).forEach(calling -> {
                 List<String> c = allCalledBy.get(calling);
                 if (c != null)
                     callings.addAll(c);
@@ -126,6 +156,39 @@ public class IsItUsedTest {
         }
 
         return callings.stream().filter(calling -> calling.startsWith(packageCalling)).collect(Collectors.toList());
+
+
+    }
+
+    public class ScrapperInherit extends DescribedPredicate<JavaClass> {
+        MultiMap<String> calledBy;
+
+        public ScrapperInherit(MultiMap<String> calledBy) {
+            super("ScrapperInherit");
+            this.calledBy = calledBy;
+        }
+
+        @Override
+        public boolean apply(JavaClass klass) {
+            for (String key : new ArrayList<>(calledBy.keySet())) {
+                var otherKlass = key.substring(0, key.lastIndexOf("."));
+                var otherMethod = key.substring(key.lastIndexOf("."));
+                if (klass.isAssignableTo(otherKlass) && !klass.getFullName().equals(otherKlass)) {
+
+                    calledBy.add(key.replace(otherKlass, klass.getFullName()), key);
+                    calledBy.add(key, key.replace(otherKlass, klass.getFullName()));
+
+                }
+                if (klass.isAssignableFrom(otherKlass) && !klass.getFullName().equals(otherKlass)) {
+
+                    calledBy.add(key.replace(otherKlass, klass.getFullName()), key);
+                    calledBy.add(key, key.replace(otherKlass, klass.getFullName()));
+                     }
+            }
+
+
+            return false;
+        }
 
 
     }

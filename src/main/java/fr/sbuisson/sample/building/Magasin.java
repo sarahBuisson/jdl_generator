@@ -8,14 +8,16 @@ public class Magasin {
     Aquarium aquarium;
     Etalage etalage;
 
-    public void someFresh(){
+    public void someFresh() {
         System.out.println(etalage.getFirstPoissons());
     }
-    public void someColor(){
+
+    public void someColor() {
         System.out.println(etalage.getColorsEtal());
     }
-    public void somePoid(){
-        System.out.println(etalage.getPoidEtal());
+
+    public void somePrix() {
+        System.out.println(etalage.getPrixEtal());
     }
 
 }

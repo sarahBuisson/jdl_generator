@@ -22,13 +22,12 @@ import java.util.stream.Collectors;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static java.util.Arrays.asList;
 
-//TODO : heritage et lambda
 public class IsItUsedTest {
 
     @Test
     public void TODO() throws Exception {
-        //TODO : heritage et lambda
-        throw new Exception("//TODO : heritage et lambda");
+        //TODO : les differentes lambda s'emele
+        throw new Exception("    //TODO : les differentes lambda s'emele");
     }
 
     @Test
@@ -59,6 +58,8 @@ public class IsItUsedTest {
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.poid", "fr.sbuisson.sample.building"));
         System.out.println("couleur");
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.couleur", "fr.sbuisson.sample.building"));
+        System.out.println("prix");
+        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.prix", "fr.sbuisson.sample.building"));
     }
 
 
@@ -115,16 +116,23 @@ public class IsItUsedTest {
             String targetName = access.getTarget().getFullName();
             String originName = access.getOrigin().getFullName();
             if (targetName.contains("lambda$"))
-                targetName = targetName.substring(0, targetName.indexOf("lambda$"));
+                targetName = targetName.substring(0, targetName.indexOf("lambda$")) + "lambda";
             if (originName.contains("lambda$"))
-                originName = originName.substring(0, originName.indexOf("lambda$"));
+                originName = originName.substring(0, originName.indexOf("lambda$")) + "lambda";
 
             if (targetName.contains("<init>"))
-                targetName = targetName.substring(0, targetName.indexOf("<init>"));
-            if (originName.contains("<init>"))
-                originName = originName.substring(0, originName.indexOf("<init>"));
+                targetName = targetName.substring(0, targetName.indexOf("<init>")) + "lambda";
+            if (originName.contains("<init>")){
+                //permet la declaration des lambda dans le corps
+                //TODO : les differentes lambda s'emele
+                originName = originName.substring(0, originName.indexOf("<init>")) + "lambda";
+                accessingTo.add(targetName, originName);
+                calledBy.add(originName, targetName);
 
-            if(targetName.contains("java.lang.Object")){
+                return false;
+            }
+
+            if (targetName.contains("java.lang.Object")) {
                 return false;
             }
             System.out.println("---");
@@ -183,7 +191,7 @@ public class IsItUsedTest {
 
                     calledBy.add(key.replace(otherKlass, klass.getFullName()), key);
                     calledBy.add(key, key.replace(otherKlass, klass.getFullName()));
-                     }
+                }
             }
 
 

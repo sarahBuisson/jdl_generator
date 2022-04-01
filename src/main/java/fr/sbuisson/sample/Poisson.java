@@ -9,6 +9,7 @@ public class Poisson {
     public Date dateNaissance;
     public String couleur;
     public String poid;
+    public String prix;
 
     public Date getDateNaissance() {
         return dateNaissance;

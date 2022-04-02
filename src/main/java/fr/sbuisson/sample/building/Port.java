@@ -5,5 +5,5 @@ import fr.sbuisson.sample.Merlan;
 public class Port {
     Merlan merlan;
 
-    public String getCouleurMerlan(){return merlan.getCouleur();}
+    public String getPoidMerlan(){return merlan.getPoid();}
 }

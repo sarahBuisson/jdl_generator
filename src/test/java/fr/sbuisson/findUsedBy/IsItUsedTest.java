@@ -10,6 +10,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jetty.util.MultiMap;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 
 public class IsItUsedTest {
 
@@ -47,21 +50,71 @@ public class IsItUsedTest {
 
 
         // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleClass =
+                noClasses().should().beAssignableFrom(new ScrapperClass(scrapper.calledBy));
+        importedClassesPack.forEach(importedClasses -> ruleClass.evaluate(importedClasses));
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
         ArchRule ruleHeritance =
                 noClasses().should().beAssignableFrom(new ScrapperInherit(scrapper.calledBy));
 
         importedClassesPack.forEach(importedClasses -> ruleHeritance.evaluate(importedClasses));
 
-        System.out.println("dateNaissance");
-        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.dateNaissance", "fr.sbuisson.sample.building"));
-        System.out.println("poid");
-        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.poid", "fr.sbuisson.sample.building"));
-        System.out.println("couleur");
-        System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.couleur", "fr.sbuisson.sample.building"));
+
+        System.out.println(scrapper.calledBy.entrySet().stream().map(e->e.getKey()+" => "+e.getValue()).collect(Collectors.joining("\n")));
+
+
+
+        assertThat(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.dateNaissance",
+                        "fr.sbuisson.sample.building"),
+                containsInAnyOrder("fr.sbuisson.sample.building.Magasin.someFresh()"));
+
+        assertThat(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.couleur",
+                        "fr.sbuisson.sample.building"),
+                containsInAnyOrder("fr.sbuisson.sample.building.Maison.getCouleur()"));
+
+        assertThat(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.poid",
+                        "fr.sbuisson.sample.building"),
+                containsInAnyOrder(asList("fr.sbuisson.sample.building.Port.getPoidMerlan()").toArray()));
+
+        assertThat(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.prix",
+                        "fr.sbuisson.sample.building"),
+                containsInAnyOrder("fr.sbuisson.sample.building.Magasin.somePrix()"));
+
+    }
+
+
+    @Test
+    public void sampleLambda() {
+        List<JavaClasses> importedClassesPack = asList(new ClassFileImporter().importPackages("fr.sbuisson.sample.mobilier"));
+
+        var scrapper = new Scrapper();
+
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule rule =
+                noClasses().should().accessTargetWhere(scrapper);
+
+
+        // THEN
+        importedClassesPack.forEach(importedClasses -> rule.evaluate(importedClasses));
+
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleClass =
+                noClasses().should().beAssignableFrom(new ScrapperClass(scrapper.calledBy));
+        importedClassesPack.forEach(importedClasses -> ruleClass.evaluate(importedClasses));
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleHeritance =
+                noClasses().should().beAssignableFrom(new ScrapperInherit(scrapper.calledBy));
+
+        importedClassesPack.forEach(importedClasses -> ruleHeritance.evaluate(importedClasses));
+
+
         System.out.println("prix");
         System.out.println(haveBeenCalledBy(scrapper.calledBy, "fr.sbuisson.sample.Poisson.prix", "fr.sbuisson.sample.building"));
     }
-
 
     @Test
     public void SearchFromCsv() throws IOException {
@@ -85,6 +138,11 @@ public class IsItUsedTest {
         importedClassesPack.forEach(importedClasses -> rule.evaluate(importedClasses));
 
         // la rule sert juste de pretexte pour le traitement du scrapper
+        ArchRule ruleClass =
+                noClasses().should().beAssignableFrom(new ScrapperClass(scrapper.calledBy));
+        importedClassesPack.forEach(importedClasses -> ruleClass.evaluate(importedClasses));
+
+        // la rule sert juste de pretexte pour le traitement du scrapper
         ArchRule ruleHeritance =
                 noClasses().should().beAssignableFrom(new ScrapperInherit(scrapper.calledBy));
 
@@ -95,6 +153,17 @@ public class IsItUsedTest {
         for (var methode : methodeToSearch) {
             System.out.println(haveBeenCalledBy(scrapper.calledBy, methode, "fr.sbuisson.sample.building"));
         }
+    }
+
+    private static String normalizeLambdaViolation(String line) {
+        String retour = line;
+        retour = retour.contains(".new")? retour.substring(0,retour.indexOf(".new")):retour;
+        retour = retour.contains(".lambda$new")? retour.substring(0,retour.indexOf(".lambda$new")):retour;
+        retour = retour.contains(".<init>")? retour.substring(0,retour.indexOf(".<init>")):retour;
+      //  retour = retour.contains("lambda$") ? retour.replaceFirst("\\$[0-9]+", "").replaceAll("lambda\\$", "") : retour;
+
+
+        return retour;
     }
 
     class Scrapper extends DescribedPredicate<JavaAccess<?>> {
@@ -113,19 +182,23 @@ public class IsItUsedTest {
         public boolean apply(JavaAccess<?> access) {
 
 
-            String targetName = access.getTarget().getFullName();
-            String originName = access.getOrigin().getFullName();
-            if (targetName.contains("lambda$"))
+            String targetName = normalizeLambdaViolation(access.getTarget().getFullName());
+            String originName = normalizeLambdaViolation(access.getOrigin().getFullName());
+           /* if (targetName.contains("lambda$"))
                 targetName = targetName.substring(0, targetName.indexOf("lambda$")) + "lambda";
             if (originName.contains("lambda$"))
                 originName = originName.substring(0, originName.indexOf("lambda$")) + "lambda";
 
             if (targetName.contains("<init>"))
                 targetName = targetName.substring(0, targetName.indexOf("<init>")) + "lambda";
-            if (originName.contains("<init>")){
+
+            */
+
+
+            if (access.getOrigin().getFullName().contains("<init>")) {
                 //permet la declaration des lambda dans le corps
                 //TODO : les differentes lambda s'emele
-                originName = originName.substring(0, originName.indexOf("<init>")) + "lambda";
+             //   originName = originName.substring(0, originName.indexOf("<init>")) + "lambda";
                 accessingTo.add(targetName, originName);
                 calledBy.add(originName, targetName);
 
@@ -135,9 +208,7 @@ public class IsItUsedTest {
             if (targetName.contains("java.lang.Object")) {
                 return false;
             }
-            System.out.println("---");
-            System.out.println(access.getTarget().getFullName() + " " + access.getOrigin().getFullName());
-            System.out.println(targetName + " " + originName);
+
             calledBy.add(targetName, originName);
             accessingTo.add(originName, targetName);
             return false;
@@ -168,6 +239,23 @@ public class IsItUsedTest {
 
     }
 
+    public class ScrapperClass extends DescribedPredicate<JavaClass> {
+        MultiMap<String> calledBy;
+
+        public ScrapperClass(MultiMap<String> calledBy) {
+            super("ScrapperClass");
+            this.calledBy = calledBy;
+        }
+
+        @Override
+        public boolean apply(JavaClass klass) {
+            calledBy.add(klass.getFullName() + ".new", klass.getFullName() + ".<init>()");
+            calledBy.add(klass.getFullName() + ".new", klass.getFullName() + "");
+            calledBy.add(klass.getFullName() + ".<init>()", klass.getFullName() + "");
+            return false;
+        }
+    }
+
     public class ScrapperInherit extends DescribedPredicate<JavaClass> {
         MultiMap<String> calledBy;
 
@@ -178,6 +266,7 @@ public class IsItUsedTest {
 
         @Override
         public boolean apply(JavaClass klass) {
+
             for (String key : new ArrayList<>(calledBy.keySet())) {
                 var otherKlass = key.substring(0, key.lastIndexOf("."));
                 var otherMethod = key.substring(key.lastIndexOf("."));

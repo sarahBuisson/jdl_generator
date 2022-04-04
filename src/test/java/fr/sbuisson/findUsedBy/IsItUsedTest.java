@@ -220,7 +220,12 @@ public class IsItUsedTest {
 
     public List<String> haveBeenCalledBy(MultiMap<String> allCalledBy, String called, String packageCalling) {
         Set<String> callings = new HashSet<>();
-        List<String> c1 = allCalledBy.get(called);
+        List<String> c1 = new ArrayList<>();
+
+
+        c1=allCalledBy.entrySet().stream().filter(e->e.getKey().matches(called)).flatMap(e->e.getValue().stream()).collect(Collectors.toList());
+
+
         if (c1 != null)
             callings.addAll(c1);
         var n = 0;
